@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# Report on your XtraDB cluster. Yaaaay!
+#
+# This script assumes you're using the mysqlchk script that comes with Percona
+# XtraDB on port 9200 on a network that has less than 1 second of lag. If you
+# have more lag than that, you probably need to rethink what you're doing
+# instead of using this script.
+#
+# Author: Peter Lieverdink <me@cafuego.net>
+# Documentation and download: https://github.com/cafuego/clusterfsck
+
+# Point this at the file with your XtraDB cluster definitions.
+CONFIG=/etc/mysql/conf.d/xtradb-cluster.cnf
+
+# How many seconds to wait for each loop iteration?
+LOOP=10
+
+# How many seconds to wait for a response from mysqlchk?
+LAG=1
+
+# What port is clusterchk listening on?
+PORT=9200
+
+# With a syntax of "wsrep_cluster_address=gcomm://foo,bar,frog,womble" this
+# should work eh?
+NODES="$(grep ^wsrep_cluster_address ${CONFIG} | cut -d '/' -f3- | tr  ',' ' ')"
+
+# Check if we actually found any nodes.
+if [ -z "${NODES}" ]; then
+  echo "Cannot find cluster nodes in config file: ${CONFIG}"
+  exit 1
+fi
+
+# Loop de loop.
+while true; do
+  echo "Cluster at $(/bin/date)"; 
+  for node in ${NODES}; do
+    /usr/bin/printf "%-15s: " ${node} && (/bin/nc -w ${LAG:-1} ${node} ${PORT:-9200} || echo "Percona XtraDB Cluster Node is dead and not synced.") | grep sync;
+  done;
+  sleep ${LOOP};
+  echo
+done
