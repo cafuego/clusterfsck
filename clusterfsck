@@ -36,7 +36,7 @@ fi
 while true; do
   echo "Cluster at $(/bin/date)"; 
   for node in ${NODES}; do
-    /usr/bin/printf "%-15s: " ${node} && (/bin/nc -w ${LAG:-1} ${node} ${PORT:-9200} || echo "Percona XtraDB Cluster Node is dead and not synced.") | grep sync;
+    /usr/bin/printf "%-15s: " ${node} && (/bin/nc -w ${LAG:-1} ${node} ${PORT:-9200} || echo "Percona XtraDB Cluster Node is dead and not synced.") | /bin/grep sync;
   done;
   sleep ${LOOP:-10};
   echo
